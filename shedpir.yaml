@@ -1,0 +1,137 @@
+substitutions:
+  ipaddress: 10.0.20.55
+  upper_devicename: shedpir
+  devicename: shedpir
+  ota: 10.0.20.55
+  friendly_name: shedpir
+
+esphome:
+  name: $devicename
+  friendly_name: $friendly_name
+  platform: ESP8266
+  board: d1_mini
+  includes:
+    - common/Custom_tuya.h
+  
+
+
+<<: !include common/wifi_config.yaml
+
+
+  
+uart:
+  rx_pin: GPIO3
+  tx_pin: GPIO1
+  baud_rate: 9600
+
+  
+tuya:
+
+  
+
+
+
+number:
+  - platform: template
+    name: "timedelay"
+    restore_value: True
+    optimistic: true
+    mode: box
+    unit_of_measurement: s
+    min_value: 10
+    max_value: 600
+    step: 1 
+    on_value: 
+      then:
+       - logger.log: "Delay updated"
+       - lambda: |-
+          sendMessage("55aa00060008680200040000", std::to_string(x), "4");     
+
+  - platform: template
+    name: "lux"
+    restore_value: True
+    optimistic: true
+    device_class: illuminance
+    mode: slider
+    min_value: 0
+    max_value: 2000
+    step: 1 
+    on_value: 
+      then:  
+       - logger.log: "Lux updated"
+     
+       - lambda: |-
+          sendMessage("55aa00060008690200040000", std::to_string(x), "4");         
+select:
+  - platform: template
+    name: "sensitivity"
+    optimistic: true
+    options:
+      - Low
+      - Medium
+      - High
+    restore_value: True
+    on_value:
+     then:
+     - lambda: |-
+          ESP_LOGD("main", "Sensitivity %s", x.c_str());
+          
+          if (x == "Low") {
+           
+           sendMessage("55aa00060008670200040000", "02", "4"); 
+          
+           }
+           
+          if (x == "Medium") {
+           
+           sendMessage("55aa00060008670200040000", "01", "4"); 
+           
+           }
+           
+          if (x == "High") {
+           
+           sendMessage("55aa00060008670200040000", "00", "4"); 
+           
+           }
+
+
+  - platform: template
+    name: "Lighton"
+    optimistic: true
+    options:
+      - "Off"
+      - "Auto"
+      - "On"
+    restore_value: True
+    on_value:
+     then:
+       - lambda: |-
+          ESP_LOGD("main", "Light %s", x.c_str());
+          
+          if (x == "Off") {
+           
+           sendMessage("55aa0006000565040001", "00", "2"); 
+       
+           }
+           
+          if (x == "Auto") {
+          
+           
+           sendMessage("55aa0006000565040001", "01", "2");
+           
+           
+           }
+           
+          if (x == "On") {
+           
+           sendMessage("55aa0006000565040001", "02", "2");
+           
+           }
+
+binary_sensor:
+  - platform: "tuya"
+    name: "motionsensor"
+    device_class: "motion"
+    sensor_datapoint: 102
+    
+    
